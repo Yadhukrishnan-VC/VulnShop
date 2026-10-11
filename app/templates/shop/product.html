@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block content %}
+<div class="layout-2col">
+  <div>
+    <div class="card" style="margin-bottom:1.5rem">
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:1.5rem;align-items:start">
+        <div style="height:280px;background:linear-gradient(135deg,#e3f2fd,#e8eaf6);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:5rem">🛍️</div>
+        <div>
+          <h1 style="font-size:1.5rem;color:#0d2b55;margin-bottom:6px">{{ product.name }}</h1>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <span class="badge badge-info">{{ product.category.name }}</span>
+            {% if product.discount_pct > 0 %}<span class="badge badge-high">{{ product.discount_pct }}% OFF</span>{% endif %}
+          </div>
+          <div style="font-size:1.8rem;font-weight:700;color:#00695c;margin-bottom:4px">₹{{ product.price }}</div>
+          {% if product.cost_price %}
+          <div style="font-size:0.8rem;color:#c62828;margin-bottom:8px">
+            Internal Cost: ₹{{ product.cost_price }}
+            <span class="vuln-tag critical">VULN-024: exposed via API</span>
+          </div>
+          {% endif %}
+          <p style="color:#616161;font-size:0.88rem;margin-bottom:1rem">Stock: {{ product.stock }} units</p>
+
+          <!-- VULN-022: description rendered unescaped — stored XSS -->
+          <div style="margin-bottom:1.5rem">
+            <p style="font-size:0.8rem;color:#c62828;margin-bottom:4px">
+              <span class="vuln-tag critical">VULN-022</span> Description rendered as raw HTML (stored XSS):
+            </p>
+            <div style="border:1px dashed #c62828;padding:12px;border-radius:5px;background:#fff8f8">
+              {{ product.description }}
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px">
+            <form method="post" action="/cart/add/">
+              <input type="hidden" name="product_id" value="{{ product.id }}">
+              <!-- VULN-C01: quantity can be negative -->
+              <input type="number" name="quantity" value="1" style="width:70px;padding:8px;border:1px solid #ccc;border-radius:4px">
+              <button class="btn btn-success">Add to Cart</button>
+              <small style="display:block;color:#c62828;font-size:0.75rem;margin-top:4px">
+                VULN-C01: Try quantity=-999
+              </small>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviews — stored XSS payload renders here -->
+    <div class="card" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem;color:#0d2b55">Reviews
+        <span class="vuln-tag critical">VULN-RV01: Stored XSS</span>
+        <span class="vuln-tag high">VULN-RV02: Post as any user</span>
+      </h3>
+      {% for r in reviews %}
+      <div style="border-bottom:0.5px solid #eee;padding:12px 0">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <strong style="font-size:0.9rem">{{ r.user.username }}</strong>
+          <span style="color:#f9a825">{{ r.rating }}★</span>
+        </div>
+        <!-- VULN-RV01: Stored XSS — content rendered unescaped -->
+        <div style="font-size:0.9rem;color:#333">{{ r.content }}</div>
+      </div>
+      {% empty %}
+      <p style="color:#616161;font-size:0.88rem">No reviews yet.</p>
+      {% endfor %}
+    </div>
+
+    <!-- Submit review form — VULN: user_id from POST, no duplicate check -->
+    <div class="card">
+      <h3 style="margin-bottom:1rem;color:#0d2b55">Write a Review
+        <span class="vuln-tag critical">VULN-RV01,02,03,04,05</span>
+      </h3>
+      <form method="post" action="/review/{{ product.id }}/">
+        <!-- VULN-RV02: user_id controllable by attacker -->
+        <div class="form-group">
+          <label>User ID <span class="vuln-tag high">VULN-RV02</span></label>
+          <input type="number" name="user_id" value="{{ user.id }}" style="width:100px">
+          <small style="color:#c62828;font-size:0.75rem">Change to 1 to post as admin</small>
+        </div>
+        <div class="form-group">
+          <label>Rating <span class="vuln-tag medium">VULN-RV03: no range check</span></label>
+          <input type="number" name="rating" value="5" style="width:80px">
+          <small style="color:#616161;font-size:0.75rem">Can be any number (even -999 or 9999)</small>
+        </div>
+        <div class="form-group">
+          <label>Review <span class="vuln-tag critical">VULN-RV01: Stored XSS</span></label>
+          <textarea name="content" rows="3" placeholder='Try: <img src=x onerror=alert(document.cookie)>'></textarea>
+        </div>
+        <button class="btn btn-primary">Submit Review</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div>
+    <div class="card" style="margin-bottom:1rem">
+      <p style="font-size:0.85rem;font-weight:600;color:#0d2b55;margin-bottom:8px">Quick Exploits</p>
+      <div style="font-size:0.8rem;display:flex;flex-direction:column;gap:6px">
+        <a href="/search/?q='+UNION+SELECT+username,password,3,4,5,6,7,8,9,10+FROM+auth_user--" class="btn btn-danger" style="text-align:center;font-size:0.78rem">SQLi: Dump Users</a>
+        <a href="/ping/?host=127.0.0.1;id" class="btn btn-danger" style="text-align:center;font-size:0.78rem">RCE: id command</a>
+        <a href="/debug/" class="btn btn-danger" style="text-align:center;font-size:0.78rem">Expose Secrets</a>
+        <a href="/download/?file=../../../../etc/passwd" class="btn btn-danger" style="text-align:center;font-size:0.78rem">Read /etc/passwd</a>
+        {% comment %} <a href="/template/?name={{7*7}}" class="btn btn-danger" style="text-align:center;font-size:0.78rem">SSTI: 7×7=49?</a> {% endcomment %}
+        <a href="/export/users/" class="btn btn-danger" style="text-align:center;font-size:0.78rem">Dump All Users</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <p style="font-size:0.85rem;font-weight:600;color:#0d2b55;margin-bottom:8px">Active Vulnerabilities</p>
+      <div class="vuln-log">
+        <div class="vl-item vl-crit">🔴 VULN-022: Stored XSS in description</div>
+        <div class="vl-item vl-crit">🔴 VULN-RV01: Stored XSS in reviews</div>
+        <div class="vl-item vl-crit">🔴 VULN-C01: Negative quantity</div>
+        <div class="vl-item vl-high">🟠 VULN-RV02: Post as any user</div>
+        <div class="vl-item vl-high">🟠 VULN-RV03: Rating not validated</div>
+        <div class="vl-item vl-high">🟠 VULN-024: Cost price exposed</div>
+        <div class="vl-item vl-med">🟡 VULN-RV04: Unlimited reviews</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

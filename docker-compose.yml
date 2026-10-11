@@ -1,0 +1,72 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: vulnshop
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - vulnnet
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - vulnnet
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py migrate --run-syncdb &&
+             python manage.py seed_data &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+      - media_files:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://admin:admin123@db:5432/vulnshop
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=super-insecure-hardcoded-key-12345
+      - ALLOWED_HOSTS=*
+    depends_on:
+      - db
+      - redis
+    networks:
+      - vulnnet
+
+  scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./scanner:/scanner
+      - scan_reports:/reports
+    ports:
+      - "9000:9000"
+    environment:
+      - TARGET_URL=http://web:8000
+    depends_on:
+      - web
+    networks:
+      - vulnnet
+
+volumes:
+  pgdata:
+  media_files:
+  scan_reports:
+
+networks:
+  vulnnet:
+    driver: bridge
