@@ -1,5 +1,5 @@
 """
-vulnshop Models
+VulnShop Models
 ⚠️ Intentionally vulnerable Django e-commerce models — for security testing only
 """
 from django.db import models

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Checkout{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto">
+  <h2 style="color:#0d2b55;margin-bottom:1rem">Checkout
+    <span class="vuln-tag critical">VULN-CH01: Price manipulation</span>
+    <span class="vuln-tag critical">VULN-CH04: Card stored plaintext</span>
+  </h2>
+
+  <div class="alert alert-warning" style="font-size:0.82rem;margin-bottom:1rem">
+    <strong>Active vulnerabilities:</strong> CH01 — Change the total field to 0.01 to buy everything for ₹0.01 · CH04 — Card data stored in DB plaintext (PCI DSS violation) · CH02 — No stock locking (race condition) · CSRF disabled
+  </div>
+
+  <form method="post" action="/checkout/" id="checkoutForm">
+    <div class="card" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem;color:#0d2b55">Shipping</h3>
+      <div class="form-group">
+        <label>Shipping Address</label>
+        <textarea name="shipping_address" rows="2" placeholder="Enter shipping address"></textarea>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem;color:#0d2b55">Payment
+        <span class="vuln-tag critical">PCI DSS Violation</span>
+      </h3>
+      <div style="background:#7f0000;color:#ffccbc;padding:8px 12px;border-radius:5px;font-size:0.8rem;margin-bottom:1rem">
+        ⚠️ VULN-CH04 + VULN-035,036: Full card number, expiry AND CVV stored in plaintext in database
+      </div>
+      <div class="form-group">
+        <label>Card Number <span class="vuln-tag critical">Stored plaintext</span></label>
+        <input type="text" name="card_number" placeholder="4111 1111 1111 1111" maxlength="19">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="form-group">
+          <label>Expiry <span class="vuln-tag critical">Stored</span></label>
+          <input type="text" name="card_expiry" placeholder="MM/YY">
+        </div>
+        <div class="form-group">
+          <label>CVV <span class="vuln-tag critical">MUST NEVER be stored</span></label>
+          <input type="text" name="card_cvv" placeholder="123" maxlength="4">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Cardholder Name</label>
+        <input type="text" name="card_holder" placeholder="Full name">
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <h3 style="color:#0d2b55;margin-bottom:1rem">Order Total
+        <span class="vuln-tag critical">VULN-CH01: Editable</span>
+      </h3>
+      <div style="background:#fff3e0;padding:10px 12px;border-radius:5px;font-size:0.82rem;margin-bottom:1rem">
+        ⚠️ VULN-CH01: The <code>total</code> field is sent from client. Change it to 0.01 to buy everything for ₹0.01
+      </div>
+      <div class="form-group">
+        <label>Total (₹) — <strong style="color:#c62828">editable by attacker</strong></label>
+        <input type="number" name="total" value="1000.00" step="0.01" style="font-size:1.2rem;font-weight:700">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Coupon Code</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="couponInput" placeholder="Try: ADMIN100 (100% off)">
+        <button type="button" onclick="applyCoupon()" class="btn btn-amber">Apply</button>
+      </div>
+      <small style="color:#c62828;font-size:0.75rem">ADMIN100 = 100% discount, no per-user limit (VULN-CP01)</small>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;font-size:1rem">Place Order</button>
+  </form>
+</div>
+
+<script>
+function applyCoupon(){
+  const code = document.getElementById('couponInput').value;
+  fetch('/cart/coupon/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'code='+code})
+  .then(r=>r.json()).then(d=>alert('Coupon: '+JSON.stringify(d)));
+}
+document.getElementById('checkoutForm').addEventListener('submit',function(e){
+  e.preventDefault();
+  const data = new FormData(this);
+  fetch('/checkout/',{method:'POST',body:data})
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.order_id) alert('✅ Order placed! ID: '+d.order_id+'\n\nCheck /order/'+d.order_id+'/ — VULN-O01: any user can view this order');
+    else alert('Error: '+JSON.stringify(d));
+  });
+});
+</script>
+{% endblock %}

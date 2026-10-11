@@ -101,7 +101,7 @@
         <a href="/ping/?host=127.0.0.1;id" class="btn btn-danger" style="text-align:center;font-size:0.78rem">RCE: id command</a>
         <a href="/debug/" class="btn btn-danger" style="text-align:center;font-size:0.78rem">Expose Secrets</a>
         <a href="/download/?file=../../../../etc/passwd" class="btn btn-danger" style="text-align:center;font-size:0.78rem">Read /etc/passwd</a>
-        {% comment %} <a href="/template/?name={{7*7}}" class="btn btn-danger" style="text-align:center;font-size:0.78rem">SSTI: 7×7=49?</a> {% endcomment %}
+        <a href="/template/?name={{ 7|add:7 }}" class="btn btn-danger" style="text-align:center;font-size:0.78rem">SSTI: 7×7=49?</a>
         <a href="/export/users/" class="btn btn-danger" style="text-align:center;font-size:0.78rem">Dump All Users</a>
       </div>
     </div>

@@ -1,6 +1,6 @@
 """
 Management command: seed_data
-Populates vulnshop with realistic test data for security testing
+Populates VulnShop with realistic test data for security testing
 """
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
@@ -20,7 +20,7 @@ class Command(BaseCommand):
     help = 'Seed database with vulnerable test data'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write('🌱 Seeding vulnshop...')
+        self.stdout.write('🌱 Seeding VulnShop...')
 
         # ── Superuser (weak password — intentional)
         if not User.objects.filter(username='admin').exists():
@@ -222,7 +222,7 @@ class Command(BaseCommand):
         self.stdout.write('  ✓ Support ticket seeded (with admin-targeting XSS payload)')
 
         self.stdout.write('\n' + '═' * 60)
-        self.stdout.write('✅ vulnshop seeded successfully!')
+        self.stdout.write('✅ VulnShop seeded successfully!')
         self.stdout.write('═' * 60)
         self.stdout.write('\n📋 TEST CREDENTIALS:')
         self.stdout.write('   admin    / admin123   (superuser)')

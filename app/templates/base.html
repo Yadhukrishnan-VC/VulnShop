@@ -102,7 +102,7 @@ footer{background:var(--navy);color:#b3c5e8;text-align:center;padding:1rem;font-
   <a href="/" class="brand">Vuln<span>Shop</span></a>
   <div class="nav-links">
     <a href="/search/">Products</a>
-    <a href="/cart/add/">Cart</a>
+    <a href="/cart/">Cart</a>
     {% if user.is_authenticated %}
       <a href="/profile/">{{ user.username }}</a>
       {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}

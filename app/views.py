@@ -71,7 +71,7 @@ def login_view(request):
             if user:
                 # VULN-L06: Session NOT cycled — session fixation possible
                 login(request, user)
-                next_url = request.GET.get('next', '/')
+                next_url = request.GET.get('next', '/search')
                 # VULN-L07: Open redirect — next param not validated
                 return redirect(next_url)
             else:
@@ -304,6 +304,56 @@ def add_to_cart(request):
 
         return JsonResponse({'status': 'ok', 'cart_total': str(cart.get_total())})
     return HttpResponse('Bad request', status=400)
+
+
+def cart_view(request):
+    """
+    VULN-C06 – Cart accessible without auth (session hijack risk)
+    VULN-C07 – No ownership validation on session cart
+    VULN-C08 – Price dynamically calculated (affected by price change)
+    """
+
+    cart = None
+    items = []
+
+    if request.user.is_authenticated:
+        cart = Cart.objects.filter(user=request.user).first()
+    else:
+        session_key = request.session.session_key
+        if session_key:
+            cart = Cart.objects.filter(session_key=session_key).first()
+
+    if cart:
+        items = cart.items.select_related('product').all()
+
+    total = 0
+    cart_data = []
+
+    for item in items:
+        subtotal = item.product.price * item.quantity   # VULN-C08
+        total += subtotal
+
+        cart_data.append({
+            'product_id': item.product.id,
+            'name': item.product.name,
+            'price': float(item.product.price),
+            'quantity': item.quantity,
+            'subtotal': float(subtotal),
+        })
+
+    # JSON API response (useful for scanner / frontend)
+    if request.GET.get('format') == 'json':
+        return JsonResponse({
+            'items': cart_data,
+            'total': float(total),
+        })
+
+    # Template rendering
+    return render(request, 'shop/cart.html', {
+        'cart': cart,
+        'items': items,
+        'total': total,
+    })
 
 
 @login_required
@@ -577,7 +627,7 @@ def deserialize_prefs(request):
 def template_render(request):
     """
     VULN-SSTI01 – Server-Side Template Injection
-    Attacker payload: name={{7*7}} → renders 49
+    Attacker payload: name={{ 7|add:7 }} → renders 49
     Attacker payload: name={{''.__class__.__mro__[1].__subclasses__()}} → dumps classes
     Attacker payload (RCE): name={% for x in ''.__class__.__mro__[1].__subclasses__() %}{% if 'Popen' in x.__name__ %}{{x('id',shell=True,stdout=-1).communicate()[0]}}{% endif %}{% endfor %}
 
@@ -899,3 +949,19 @@ def render_invoice(request, order_id):
     </body></html>
     """
     return HttpResponse(html)
+
+
+# ── Missing utility views ─────────────────────────────────────────
+
+def home(request):
+    """Home page — lists all products."""
+    products = Product.objects.filter(is_active=True).select_related('category')
+    categories = Category.objects.all()
+    return render(request, 'shop/home.html', {
+        'products': products,
+        'categories': categories,
+    })
+
+def logout_view(request):
+    logout(request)
+    return redirect('/login/')

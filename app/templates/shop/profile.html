@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div style="max-width:600px;margin:0 auto">
+  <h2 style="color:#0d2b55;margin-bottom:1rem">My Profile
+    <span class="vuln-tag high">VULN-UP01,02,03</span>
+  </h2>
+  <div class="alert alert-warning" style="font-size:0.82rem;margin-bottom:1rem">
+    UP01: Change password without confirming current · UP03: Upload any file as avatar (no MIME check)
+  </div>
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" value="{{ user.username }}" disabled style="background:#f5f5f5">
+      </div>
+      <div class="form-group">
+        <label>Phone <span class="vuln-tag medium">PII plaintext</span></label>
+        <input type="text" name="phone" value="{{ profile.phone }}">
+      </div>
+      <div class="form-group">
+        <label>Address</label>
+        <textarea name="address">{{ profile.address }}</textarea>
+      </div>
+      <div class="form-group">
+        <label>New Password <span class="vuln-tag high">No current password required</span></label>
+        <input type="password" name="password" placeholder="Leave blank to keep current">
+        <small style="color:#c62828;font-size:0.75rem">VULN-UP01: No old_password verification</small>
+      </div>
+      <div class="form-group">
+        <label>Avatar <span class="vuln-tag critical">Any file accepted (RCE risk)</span></label>
+        <input type="file" name="avatar">
+        <small style="color:#c62828;font-size:0.75rem">VULN-UP03: Upload .py or .sh file — no MIME validation</small>
+      </div>
+      <div style="margin-bottom:1rem;padding:12px;background:#e3f2fd;border-radius:5px">
+        <p style="font-size:0.85rem;color:#0d2b55"><strong>Wallet:</strong> ₹{{ profile.wallet_balance }}
+          <span class="vuln-tag medium">No transfer lock</span>
+        </p>
+        <p style="font-size:0.85rem;color:#0d2b55;margin-top:4px"><strong>Points:</strong> {{ profile.loyalty_points }}</p>
+      </div>
+      <button class="btn btn-primary">Save Changes</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

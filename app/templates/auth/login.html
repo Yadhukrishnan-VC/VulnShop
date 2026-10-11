@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div style="max-width:420px;margin:2rem auto">
+  <div class="card">
+    <h2 style="color:#0d2b55;margin-bottom:4px">Login</h2>
+    <p style="font-size:0.82rem;color:#616161;margin-bottom:1.5rem">
+      Test creds: <code>admin/admin123</code> · <code>alice/password123</code>
+    </p>
+
+    <div class="alert alert-warning" style="font-size:0.8rem">
+      <strong>Vulnerabilities active:</strong> No CSRF token · No rate limit · SQL injection on username · Session fixation · Open redirect via ?next=
+    </div>
+
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <!-- VULN: no csrf_token tag, no rate limiting, action vulnerable to SQLi -->
+    <form method="post" action="/login/?next={{ request.GET.next }}">
+      <div class="form-group">
+        <label>Username <span class="vuln-tag critical">SQLi</span></label>
+        <input type="text" name="username" placeholder="Try: admin'--" required autofocus>
+        <small style="color:#616161;font-size:0.75rem">SQLi payload: <code>admin'--</code></small>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%">Login</button>
+    </form>
+
+    <div style="margin-top:1rem;text-align:center;font-size:0.88rem;color:#616161">
+      <a href="/password-reset/">Forgot password?</a> · <a href="/register/">Register</a>
+    </div>
+
+    <div style="margin-top:1.5rem;background:#0a0e1a;border-radius:6px;padding:12px">
+      <p style="color:#80cbc4;font-size:0.75rem;font-family:monospace">
+        # VULN-L04: SQL injection via raw query<br>
+        f"SELECT id FROM auth_user WHERE username='{username}'"<br>
+        <span style="color:#ff5252"># Payload: admin'-- bypasses password check</span>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

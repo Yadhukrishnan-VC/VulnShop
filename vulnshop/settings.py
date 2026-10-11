@@ -1,5 +1,5 @@
 """
-vulnshop Settings
+VulnShop Settings
 ⚠️  INTENTIONALLY VULNERABLE — FOR SECURITY TESTING ONLY
 """
 import os

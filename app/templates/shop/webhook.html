@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}SSRF Test{% endblock %}
+{% block content %}
+<div style="max-width:600px;margin:0 auto">
+  <h2 style="color:#0d2b55;margin-bottom:1rem">Webhook Tester
+    <span class="vuln-tag critical">VULN-SSRF01</span>
+  </h2>
+  <div class="alert alert-warning" style="font-size:0.82rem;margin-bottom:1rem">
+    Server fetches any URL. Try internal endpoints: AWS metadata, Redis, PostgreSQL, local files.
+  </div>
+  <div class="card">
+    <form method="post">
+      <div class="form-group">
+        <label>URL to fetch (server-side)</label>
+        <input type="url" name="url" placeholder="http://169.254.169.254/latest/meta-data/">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+        <button type="button" onclick="setUrl('http://169.254.169.254/latest/meta-data/')" class="btn btn-danger" style="font-size:0.8rem">AWS Metadata</button>
+        <button type="button" onclick="setUrl('http://redis:6379/')" class="btn btn-danger" style="font-size:0.8rem">Redis Internal</button>
+        <button type="button" onclick="setUrl('http://db:5432/')" class="btn btn-danger" style="font-size:0.8rem">PostgreSQL</button>
+        <button type="button" onclick="setUrl('http://localhost/debug/')" class="btn btn-danger" style="font-size:0.8rem">Localhost debug</button>
+      </div>
+      <button class="btn btn-primary">Fetch URL</button>
+    </form>
+  </div>
+</div>
+<script>function setUrl(u){document.querySelector('input[name=url]').value=u;}</script>
+{% endblock %}

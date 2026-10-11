@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Reset Password{% endblock %}
+{% block content %}
+<div style="max-width:420px;margin:2rem auto">
+  <div class="card">
+    <h2 style="color:#0d2b55;margin-bottom:1rem">Set New Password
+      <span class="vuln-tag high">VULN-PR06,07</span>
+    </h2>
+    <div class="alert alert-warning" style="font-size:0.82rem;margin-bottom:1rem">
+      PR06: Token compared with == (timing attack) · PR07: Old tokens not invalidated after reset
+    </div>
+    <form method="post">
+      <input type="hidden" name="token" value="{{ token }}">
+      <div class="form-group">
+        <label>New Password (no validation)</label>
+        <input type="password" name="password" required>
+      </div>
+      <button class="btn btn-primary" style="width:100%">Reset Password</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

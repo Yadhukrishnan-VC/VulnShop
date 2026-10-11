@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }}{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+    <h2 style="color:#0d2b55">Order #{{ order.id }}
+      <span class="vuln-tag critical">VULN-O01: IDOR — no ownership check</span>
+    </h2>
+    <span class="badge badge-{{ order.status }}">{{ order.status }}</span>
+  </div>
+
+  <div class="alert alert-warning" style="font-size:0.82rem;margin-bottom:1rem">
+    IDOR: Any user can view this order. Try /order/1/, /order/2/, /order/3/ etc.
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <table>
+      <tr><th>Field</th><th>Value</th><th>Vuln</th></tr>
+      <tr><td>Order ID</td><td>{{ order.id }}</td><td><span class="vuln-tag medium">Sequential — enumerable</span></td></tr>
+      <tr><td>User</td><td>{{ order.user }}</td><td></td></tr>
+      <tr><td>Total</td><td>₹{{ order.total }}</td><td><span class="vuln-tag critical">Set by client at checkout</span></td></tr>
+      <tr><td>Status</td><td>{{ order.status }}</td><td></td></tr>
+      <tr><td>Shipping</td><td>{{ order.shipping_addr }}</td><td></td></tr>
+      <tr><td>Notes</td><td>{{ order.notes }}</td><td><span class="vuln-tag high">Rendered as raw HTML</span></td></tr>
+      <tr><td>Payment Ref</td><td>{{ order.payment_ref }}</td><td><span class="vuln-tag critical">May contain card data</span></td></tr>
+    </table>
+  </div>
+
+  <!-- VULN-O03: Mass assignment — any field writable -->
+  <div class="card">
+    <h3 style="color:#0d2b55;margin-bottom:1rem">Update Order
+      <span class="vuln-tag critical">VULN-O03,04: Mass assignment, no auth</span>
+    </h3>
+    <p style="font-size:0.82rem;color:#c62828;margin-bottom:1rem">Any user can update any field: total, status, user_id</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="updateOrder({total:'0.01'})" class="btn btn-danger" style="font-size:0.82rem">Set total=₹0.01</button>
+      <button onclick="updateOrder({status:'refunded'})" class="btn btn-danger" style="font-size:0.82rem">Force refunded</button>
+      <button onclick="updateOrder({user_id:1})" class="btn btn-danger" style="font-size:0.82rem">Transfer to admin</button>
+    </div>
+    <div style="margin-top:1rem">
+      <a href="/order/{{ order.id }}/refund/" onclick="return requestRefund();" class="btn btn-amber">Request Refund (any amount)</a>
+    </div>
+  </div>
+</div>
+<script>
+function updateOrder(data){
+  fetch('/order/{{ order.id }}/update/',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)
+  }).then(r=>r.json()).then(d=>alert('Updated: '+JSON.stringify(d)));
+}
+function requestRefund(){
+  const amount = prompt('Refund amount? (no max limit — try 999999)','999999');
+  if(!amount) return false;
+  fetch('/order/{{ order.id }}/refund/',{
+    method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'amount='+amount
+  }).then(r=>r.json()).then(d=>alert('Refund: '+JSON.stringify(d)));
+  return false;
+}
+</script>
+{% endblock %}

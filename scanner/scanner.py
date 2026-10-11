@@ -198,7 +198,7 @@ except socket.gaierror:
             "'><img src=x onerror=alert(1)>",
             '<svg onload=alert(1)>',
             'javascript:alert(1)',
-            '{{7*7}}',   # also tests SSTI
+            '{{ 7|add:7 }}',   # also tests SSTI
             '<details open ontoggle=alert(1)>',
             '"><iframe src="javascript:alert(1)">',
             '<body onload=alert(document.domain)>',
@@ -274,7 +274,7 @@ ProductReview.objects.create(content=safe_content)''',
     def scan_ssti(self):
         print("[SSTI] Testing Server-Side Template Injection...")
         probes = [
-            ('{{7*7}}',          '49',  'Jinja2/Django math eval'),
+            ('{{ 7|add:7 }}',          '49',  'Jinja2/Django math eval'),
             ('${7*7}',           '49',  'Mako/Freemarker'),
             ('{{7*\'7\'}}',      '7777777', 'Jinja2 string multiply'),
         ]
